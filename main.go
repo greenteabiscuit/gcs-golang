@@ -26,18 +26,33 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// オブジェクトのReaderを作成
+	// ......................
+	// オブジェクトのアップロード
+	// ......................
 	bucketName := "experimental-bucket-tt"   // e.g. example-bucket
 	objectPath := "sample-object/sample.txt" // e.g. foo/var/sample.txt
 
-	writer := client.Bucket(bucketName).Object(objectPath).NewWriter(ctx)
-	if _, err := io.Copy(writer, f); err != nil {
+	uploadWriter := client.Bucket(bucketName).Object(objectPath).NewWriter(ctx)
+	if _, err := io.Copy(uploadWriter, f); err != nil {
 		panic(err)
 	}
 
-	if err := writer.Close(); err != nil {
+	if err := uploadWriter.Close(); err != nil {
 		panic(err)
 	}
+	log.Println("create file: done")
 
-	log.Println("done")
+	// ......................
+	// オブジェクトの移動
+	// ......................
+	dstObjectPath := "destination-folder/30/sample.txt"
+	src := client.Bucket(bucketName).Object(objectPath)
+	dst := client.Bucket(bucketName).Object(dstObjectPath)
+	if _, err := dst.CopierFrom(src).Run(ctx); err != nil {
+		panic(err)
+	}
+	if err := src.Delete(ctx); err != nil {
+		panic(err)
+	}
+	log.Println("move file: done")
 }
